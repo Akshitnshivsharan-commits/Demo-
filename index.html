@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEE Advanced 2026 - DEMO CBT Simulator</title>
+    <style>
+        :root {
+            --primary-bg: #f4f6f9;
+            --jee-blue: #1b4f72;
+            --jee-light-blue: #3498db;
+            --jee-green: #27ae60;
+            --jee-red: #e74c3c;
+            --jee-gray: #7f8c8d;
+            --jee-purple: #8e44ad;
+            --text-dark: #2c3e50;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body { background-color: var(--primary-bg); color: var(--text-dark); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        header { background-color: var(--jee-blue); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
+        .exam-title h1 { font-size: 1.3rem; font-weight: bold; }
+        .exam-title p { font-size: 0.9rem; color: #bdc3c7; }
+        .timer-box { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 4px; font-weight: bold; }
+
+        .container { display: flex; flex: 1; height: calc(100vh - 65px); overflow: hidden; }
+
+        .test-area { flex: 3; display: flex; flex-direction: column; border-right: 2px solid #ddd; background: #fff; }
+        .subject-tabs { display: flex; background: #eaedf2; border-bottom: 1px solid #ccc; }
+        .tab-btn { padding: 12px 24px; border: none; background: none; font-weight: bold; color: var(--text-dark); cursor: pointer; border-right: 1px solid #ccc; transition: all 0.2s; }
+        .tab-btn.active { background: white; color: var(--jee-light-blue); border-bottom: 3px solid var(--jee-light-blue); }
+
+        .question-content { flex: 1; padding: 25px; overflow-y: auto; }
+        .q-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .q-body { font-size: 1.1rem; line-height: 1.6; margin-bottom: 25px; }
+
+        .options-list { display: flex; flex-direction: column; gap: 12px; }
+        .option-item { display: flex; align-items: center; padding: 12px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer; transition: background 0.2s; }
+        .option-item:hover { background: #f1f8ff; }
+        .option-item.selected { border-color: var(--jee-light-blue); background: #e6f2ff; }
+        .option-item input { margin-right: 12px; transform: scale(1.2); }
+
+        .numerical-input { padding: 12px; font-size: 1.1rem; width: 100%; max-width: 300px; border: 2px solid #ccc; border-radius: 5px; }
+
+        .action-footer { padding: 15px 25px; border-top: 1px solid #eee; display: flex; justify-content: space-between; background: #f9f9f9; }
+        .btn { padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; font-size: 0.95rem; }
+        .btn-prev { background: #fff; border: 1px solid #ccc; }
+        .btn-review { background: var(--jee-purple); color: white; }
+        .btn-save { background: var(--jee-green); color: white; }
+
+        .palette-area { flex: 1; max-width: 320px; display: flex; flex-direction: column; background: #fdfdfd; }
+        .user-info { padding: 15px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eee; background: #fff; }
+        .user-avatar { width: 48px; height: 48px; background: #bdc3c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.2rem; }
+
+        .legend { padding: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; border-bottom: 1px solid #eee; }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .badge { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold; color: white; font-size: 0.85rem; }
+        .badge.answered { background: var(--jee-green); }
+        .badge.not-answered { background: var(--jee-red); }
+        .badge.marked { background: var(--jee-purple); }
+        .badge.not-visited { background: #fff; color: #333; border: 1px solid #aaa; }
+
+        .grid-container { flex: 1; padding: 15px; overflow-y: auto; }
+        .question-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .palette-btn { 
+            height: 42px; border-radius: 50%; border: 1px solid #ccc; cursor: pointer; 
+            font-weight: bold; background: #fff; display: flex; align-items: center; 
+            justify-content: center; font-size: 1.1rem; transition: all 0.2s;
+        }
+        .palette-btn.answered { background: var(--jee-green); color: white; }
+        .palette-btn.not-answered { background: var(--jee-red); color: white; }
+        .palette-btn.marked { background: var(--jee-purple); color: white; }
+        .palette-btn.not-visited { background: #fff; color: #333; }
+        .palette-btn.active { border: 3px solid var(--jee-blue); box-shadow: 0 0 0 4px rgba(27,79,114,0.3); }
+
+        .submit-section { padding: 15px; border-top: 1px solid #eee; background: #fff; }
+        .btn-submit { background: #e67e22; color: white; width: 100%; padding: 14px; font-size: 1.1rem; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; width: 90%; max-width: 800px; border-radius: 12px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+    </style>
+    <!-- MathJax for beautiful LaTeX rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<body>
+
+    <header>
+        <div class="exam-title">
+            <h1>🚀 JEE Advanced 2026 - DEMO TEST</h1>
+            <p>3 Questions • 9 Minutes • Try it before full test</p>
+        </div>
+        <div class="timer-box" id="timer">⏱ 00:09:00</div>
+    </header>
+
+    <div class="container">
+        <div class="test-area">
+            <div class="subject-tabs">
+                <button class="tab-btn active" onclick="switchSubject('physics')">Physics</button>
+                <button class="tab-btn" onclick="switchSubject('chemistry')">Chemistry</button>
+                <button class="tab-btn" onclick="switchSubject('math')">Mathematics</button>
+            </div>
+
+            <div class="question-content">
+                <div class="q-header">
+                    <span id="question-num" style="font-weight:700; font-size:1.2rem;">Question 1</span>
+                    <span id="q-marking" style="font-size:0.9rem; color:#7f8c8d;">SCQ (+3, -1)</span>
+                </div>
+                <div class="q-body" id="question-text"></div>
+                <div id="options-container" class="options-list"></div>
+            </div>
+
+            <div class="action-footer">
+                <button class="btn btn-prev" onclick="prevQuestion()">← Previous</button>
+                <div>
+                    <button class="btn btn-review" onclick="markForReview()">Mark for Review</button>
+                    <button class="btn btn-save" onclick="saveAndNext()">Save &amp; Next →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="palette-area">
+            <div class="user-info">
+                <div class="user-avatar">DR</div>
+                <div>
+                    <div style="font-weight:bold;">Dropper Profile</div>
+                    <div style="font-size:0.85rem;color:#7f8c8d;">Target: IIT CS/EE</div>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item"><span class="badge answered" id="legend-answered">0</span>Answered</div>
+                <div class="legend-item"><span class="badge not-answered" id="legend-notanswered">0</span>Not Answered</div>
+                <div class="legend-item"><span class="badge marked" id="legend-marked">0</span>Marked</div>
+                <div class="legend-item"><span class="badge not-visited" id="legend-notvisited">0</span>Not Visited</div>
+            </div>
+
+            <div class="grid-container">
+                <h4 style="margin-bottom:8px;">Question Palette</h4>
+                <div class="question-grid" id="palette-grid"></div>
+            </div>
+
+            <div class="submit-section">
+                <button class="btn-submit" onclick="submitExam()">SUBMIT DEMO TEST</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Result Modal (Demo version) -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <h2 style="text-align:center; color:#1b4f72;">🎯 DEMO TEST RESULT</h2>
+            <div style="text-align:center; margin:25px 0;">
+                <div style="font-size:3rem; font-weight:bold;" id="totalScore">0/11</div>
+                <div style="font-size:1.1rem; color:#27ae60;" id="percentage">0%</div>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; margin:20px 0;">
+                <tr><th style="text-align:left; padding:10px; background:#f1f1f1;">Question</th>
+                    <th style="padding:10px; background:#f1f1f1;">Your Answer</th>
+                    <th style="padding:10px; background:#f1f1f1;">Marks</th></tr>
+                <tbody id="resultTable"></tbody>
+            </table>
+
+            <div id="mentorComment" style="background:#e8f4f8; padding:18px; border-radius:8px; margin-top:20px;"></div>
+
+            <button onclick="location.reload()" style="margin-top:25px; width:100%; padding:14px; background:#1b4f72; color:white; border:none; border-radius:6px; font-size:1.1rem; font-weight:bold; cursor:pointer;">
+                Try Demo Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DEMO QUESTIONS (3 questions only) ====================
+        const questions = [
+            {
+                id: 1, subject: 'physics', type: 'SCQ', marks: [3, -1],
+                text: "A particle is thrown from ground with speed \( u \) at an angle \( \\theta \) with horizontal. Find the radius of curvature of the trajectory at its highest point.",
+                options: ["\( u^2 \\cos^2 \\theta / g \)", "\( u^2 \\sin^2 \\theta / g \)", "\( u^2 / g \)", "\( u^2 \\cos \\theta / g \)"],
+                correct: [0], userResponse: null, status: 'not-visited'
+            },
+            {
+                id: 2, subject: 'chemistry', type: 'MCQ', marks: [4, -2],
+                text: "Which of the following contains the same number of atoms as 12 g of Carbon-12?",
+                options: ["1.0 g of Hydrogen gas (H\( _2 \))", "16.0 g of Oxygen gas (O\( _2 \))", "4.0 g of Helium gas (He)", "28.0 g of Nitrogen gas (N\( _2 \))"],
+                correct: [1, 2], userResponse: [], status: 'not-visited'
+            },
+            {
+                id: 3, subject: 'math', type: 'NUMERICAL', marks: [4, 0],
+                text: "If \( \\alpha \) and \( \\beta \) are roots of \( x^2 - 6x + a = 0 \) such that $3\\alpha + 2\\beta = 20$, find the value of \( a \).",
+                options: [], correct: ["-16"], userResponse: null, status: 'not-visited'
+            }
+        ];
+
+        let currentQIndex = 0;
+        let timeRemaining = 9 * 60; // 9 minutes for demo
+
+        function startTimer() {
+            const timerDisplay = document.getElementById('timer');
+            setInterval(() => {
+                if (timeRemaining <= 0) {
+                    submitExam();
+                    return;
+                }
+                timeRemaining--;
+                const m = Math.floor(timeRemaining / 60);
+                const s = timeRemaining % 60;
+                timerDisplay.innerHTML = `⏱ \( {m.toString().padStart(2,'0')}: \){s.toString().padStart(2,'0')}`;
+            }, 1000);
+        }
+
+        function updateQuestionStatus() {
+            const q = questions[currentQIndex];
+            const hasAnswer = (q.type === 'SCQ' || q.type === 'NUMERICAL') 
+                ? (q.userResponse !== null && q.userResponse !== '') 
+                : (q.userResponse && q.userResponse.length > 0);
+            q.status = hasAnswer ? 'answered' : 'not-answered';
+        }
+
+        function renderQuestion() {
+            const q = questions[currentQIndex];
+            document.getElementById('question-num').innerHTML = `Question \( {currentQIndex + 1} <small style="color:#7f8c8d">( \){q.subject.toUpperCase()})</small>`;
+            document.getElementById('q-marking').innerText = `\( {q.type} (+ \){q.marks[0]}, ${q.marks[1]})`;
+            document.getElementById('question-text').innerHTML = q.text;
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+
+            if (q.type === 'SCQ') {
+                q.options.forEach((opt, i) => {
+                    const selected = q.userResponse === i ? 'selected' : '';
+                    container.innerHTML += `
+                        <div class="option-item \( {selected}" onclick="selectSCQ( \){i})">
+                            <input type="radio" ${q.userResponse === i ? 'checked' : ''}> ${opt}
+                        </div>`;
+                });
+            } else if (q.type === 'MCQ') {
+                q.options.forEach((opt, i) => {
+                    const checked = q.userResponse.includes(i) ? 'checked' : '';
+                    const selected = checked ? 'selected' : '';
+                    container.innerHTML += `
+                        <div class="option-item \( {selected}" onclick="selectMCQ( \){i})">
+                            <input type="checkbox" ${checked}> ${opt}
+                        </div>`;
+                });
+            } else if (q.type === 'NUMERICAL') {
+                container.innerHTML = `
+                    <input type="text" class="numerical-input" id="numInput" 
+                           value="${q.userResponse || ''}" 
+                           oninput="setNumericalResponse(this.value)" 
+                           placeholder="Enter numerical answer">`;
+            }
+
+            updatePaletteUI();
+            if (window.MathJax) MathJax.typesetPromise();
+        }
+
+        function updatePaletteUI() {
+            const grid = document.getElementById('palette-grid');
+            grid.innerHTML = '';
+            questions.forEach((q, i) => {
+                const cls = q.status;
+                const active = i === currentQIndex ? 'active' : '';
+                grid.innerHTML += `<button class="palette-btn ${cls} \( {active}" onclick="goToQuestion( \){i})">${i+1}</button>`;
+            });
+
+            document.getElementById('legend-answered').textContent = questions.filter(q => q.status === 'answered').length;
+            document.getElementById('legend-notanswered').textContent = questions.filter(q => q.status === 'not-answered').length;
+            document.getElementById('legend-marked').textContent = questions.filter(q => q.status === 'marked').length;
+            document.getElementById('legend-notvisited').textContent = questions.filter(q => q.status === 'not-visited').length;
+        }
+
+        function selectSCQ(i) { questions[currentQIndex].userResponse = i; updateQuestionStatus(); renderQuestion(); }
+        function selectMCQ(i) {
+            let res = questions[currentQIndex].userResponse;
+            if (res.includes(i)) res = res.filter(x => x !== i);
+            else res.push(i);
+            questions[currentQIndex].userResponse = res;
+            updateQuestionStatus();
+            renderQuestion();
+        }
+        function setNumericalResponse(val) {
+            questions[currentQIndex].userResponse = val.trim();
+            updateQuestionStatus();
+            updatePaletteUI();
+        }
+
+        function goToQuestion(i) {
+            if (questions[currentQIndex].status === 'not-visited') questions[currentQIndex].status = 'not-answered';
+            currentQIndex = i;
+            renderQuestion();
+        }
+
+        function saveAndNext() {
+            updateQuestionStatus();
+            if (currentQIndex < questions.length - 1) currentQIndex++;
+            renderQuestion();
+        }
+
+        function markForReview() {
+            questions[currentQIndex].status = 'marked';
+            if (currentQIndex < questions.length - 1) currentQIndex++;
+            renderQuestion();
+        }
+
+        function prevQuestion() {
+            if (currentQIndex > 0) { currentQIndex--; renderQuestion(); }
+        }
+
+        function switchSubject(sub) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === sub));
+            const idx = questions.findIndex(q => q.subject === sub);
+            if (idx !== -1) { currentQIndex = idx; renderQuestion(); }
+        }
+
+        function submitExam() {
+            let score = 0;
+            let tableHTML = '';
+
+            questions.forEach((q, i) => {
+                let marksGot = 0;
+                let userAns = '—';
+
+                if (q.type === 'SCQ' && q.userResponse !== null) {
+                    userAns = String.fromCharCode(65 + q.userResponse);
+                    if (q.userResponse === q.correct[0]) marksGot = 3;
+                    else marksGot = -1;
+                } else if (q.type === 'MCQ' && q.userResponse.length) {
+                    userAns = q.userResponse.map(x => String.fromCharCode(65 + x)).join(', ');
+                    if (JSON.stringify(q.userResponse.sort()) === JSON.stringify(q.correct.sort())) marksGot = 4;
+                    else marksGot = -2;
+                } else if (q.type === 'NUMERICAL' && q.userResponse) {
+                    userAns = q.userResponse;
+                    if (parseFloat(q.userResponse) === parseFloat(q.correct[0])) marksGot = 4;
+                }
+
+                score += marksGot;
+                tableHTML += `<tr><td>Q\( {i+1}</td><td> \){userAns}</td><td style="color:\( {marksGot>0?'#27ae60':'#e74c3c'}"> \){marksGot}</td></tr>`;
+            });
+
+            document.getElementById('totalScore').innerHTML = `${score}/11`;
+            document.getElementById('percentage').innerHTML = `${Math.round(score/11*100)}%`;
+            document.getElementById('resultTable').innerHTML = tableHTML;
+
+            const comment = score >= 8 
+                ? "🔥 Excellent! You are ready for the real test." 
+                : score >= 5 
+                ? "👍 Good start. Keep practising!" 
+                : "📌 Nice attempt. Try the full version now.";
+            document.getElementById('mentorComment').innerHTML = `<strong>Feedback:</strong> ${comment}`;
+
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+
+        // Start the demo
+        window.onload = () => {
+            renderQuestion();
+            updatePaletteUI();
+            startTimer();
+            console.log('%c✅ DEMO TEST READY! All answers save perfectly.', 'color:#27ae60;font-weight:bold');
+        };
+    </script>
+</body>
+</html>
